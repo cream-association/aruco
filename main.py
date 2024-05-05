@@ -11,15 +11,15 @@ if __name__ == "__main__":
     LOGGER.info("Starting video capture ...")
     vid = cv2.VideoCapture(0)
 
+    # detecting aruco
+    LOGGER.info("Loading aruco dict")
+    arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_1000)
+    arucoParams = cv2.aruco.DetectorParameters()
+    detector = cv2.aruco.ArucoDetector(arucoDict, arucoParams)
+
     while True:
         LOGGER.info("reading next frame")
         ret, frame = vid.read()
-
-        # detecting aruco
-        LOGGER.info("Loading aruco dict")
-        arucoDict = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_1000)
-        arucoParams = cv2.aruco.DetectorParameters()
-        detector = cv2.aruco.ArucoDetector(arucoDict, arucoParams)
 
         LOGGER.info("detect ArUco markers in the input frame")
         (corners, ids, rejected) = detector.detectMarkers(frame)
