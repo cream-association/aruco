@@ -144,7 +144,7 @@ if __name__ == "__main__":
                             2,
                             )
 
-        if GUI_available == False:
+        if GUI_available == True:
                 cv2.imshow("frame", frame)
                 if cv2.waitKey(1) & 0xFF == ord("q"):
                         LOGGER.info("Exit key pressed, exiting")
