@@ -41,6 +41,9 @@ def estimatePoseSingleMarkers(corners, marker_size, mtx=cMat,distortion=dcoeff):
         trash.append(nada)
     return rvecs, tvecs, trash
 
+def get_center(topLeft_corner, bottomRight_corner):
+    return int((topLeft_corner[0] + bottomRight_corner[0]) / 2.0), int((topLeft_corner[1] + bottomRight_corner[1]) / 2.0)
+
 
 def compute_x_borders(marker_x, dist, frame_width, max_dist):
     return compute_left_border(

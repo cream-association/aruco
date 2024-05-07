@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 import logging
-from utils import estimatePoseSingleMarkers, compute_x_borders
+from utils import estimatePoseSingleMarkers, compute_x_borders, get_center
 
 logging.basicConfig()
 LOGGER = logging.getLogger("aruco")
@@ -75,8 +75,7 @@ if __name__ == "__main__":
                         "compute and draw the center (x, y)-coordinates of the"
                         " ArUco marker"
                         )
-                cX = int((topLeft[0] + bottomRight[0]) / 2.0)
-                cY = int((topLeft[1] + bottomRight[1]) / 2.0)
+                cX, cY = get_center(topLeft, bottomRight)
                 cv2.circle(frame, (cX, cY), 4, (0, 0, 255), -1)
 
                 LOGGER.info("draw the ArUco marker ID on the frame")
