@@ -7,6 +7,7 @@ logging.basicConfig()
 LOGGER = logging.getLogger("aruco")
 LOGGER.setLevel(logging.DEBUG)
 
+GUI_available = False
 
 if __name__ == "__main__":
     LOGGER.info("Starting video capture ...")
@@ -143,11 +144,11 @@ if __name__ == "__main__":
                             2,
                             )
 
-        cv2.imshow("frame", frame)
-
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            LOGGER.info("Exit key pressed, exiting")
-            break
+        if GUI_available == False:
+                cv2.imshow("frame", frame)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                        LOGGER.info("Exit key pressed, exiting")
+                        break
 
     vid.release()
     cv2.destroyAllWindows()
