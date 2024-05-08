@@ -1,3 +1,4 @@
 calibration.pckl
 calibration_data.pckl
 main.cpp
+__pycache__/
