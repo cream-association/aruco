@@ -1,13 +1,18 @@
 import numpy as np
 import cv2
 import logging
-from utils import estimatePoseSingleMarkers, compute_x_borders, get_center
+from utils import (estimatePoseSingleMarkers, get_center_from_tag_corners,
+                   get_distance_from_center)
+
 
 logging.basicConfig()
 LOGGER = logging.getLogger("aruco")
 LOGGER.setLevel(logging.DEBUG)
 
 GUI_available = False
+
+aruco_tags_to_detect = [36, 13]  # Tag number of delicate and tough flowers resp
+
 
 if __name__ == "__main__":
     LOGGER.info("Starting video capture ...")
@@ -29,8 +34,11 @@ if __name__ == "__main__":
         (corners, ids, rejected) = detector.detectMarkers(frame)
 
         LOGGER.info("verify *at least* one ArUco marker was detected")
+
+        corners_to_consider = []
+
         if len(corners) > 0:
-            LOGGER.debug("flatten the ArUco IDs list")
+            #LOGGER.debug("flatten the ArUco IDs list")
             ids = ids.flatten()
 
             LOGGER.debug("loop over the detected ArUCo corners")
@@ -40,109 +48,44 @@ if __name__ == "__main__":
                         "in top-left, top-right, bottom-right, and bottom-left "
                         "order"
                         )
-                corners = markerCorner.reshape((4, 2))
-                (topLeft, topRight, bottomRight, bottomLeft) = corners
 
-                LOGGER.info("convert each of the (x, y)-coordinate pairs to integers")
-                topRight = (int(topRight[0]), int(topRight[1]))
-                bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
-                bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
-                topLeft = (int(topLeft[0]), int(topLeft[1]))
+                to_consider = False
+                # In some cases (Why?) markerID is not a int, but a list of int
+                try:
+                        to_consider = markerID in aruco_tags_to_detect
 
-                LOGGER.info("draw the bounding box of the ArUCo detection")
-                cv2.line(frame, topLeft, topRight, (0, 255, 0), 2)
-                cv2.line(frame, topRight, bottomRight, (0, 255, 0), 2)
-                cv2.line(frame, bottomRight, bottomLeft, (0, 255, 0), 2)
-                cv2.line(frame, bottomLeft, topLeft, (0, 255, 0), 2)
+                except Exception:
+                        pass
 
-                LOGGER.info("Estimating aruco position")
-                rvec, tvec, _ = estimatePoseSingleMarkers(
-                        markerCorner, 0.01)
-
-                dist = np.linalg.norm(tvec) * 100
-
-                LOGGER.info("draw the ArUco marker ID on the frame")
-                cv2.putText(
-                        frame,
-                        f"{markerID} - Distance: {dist:.2f} cm",
-                        (topLeft[0], topLeft[1] - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 255, 0),
-                        2,
-                        )
-
-                LOGGER.info(
-                        "compute and draw the center (x, y)-coordinates of the"
-                        " ArUco marker"
-                        )
-                cX, cY = get_center(topLeft, bottomRight)
-                cv2.circle(frame, (cX, cY), 4, (0, 0, 255), -1)
-
-                LOGGER.info("draw the ArUco marker ID on the frame")
-                cv2.putText(
-                        frame,
-                        str(markerID),
-                        (topLeft[0], topLeft[1] - 15),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (0, 255, 0),
-                        2,
-                        )
-
-                if dist < 10:
-                    LOGGER.info("Do not need to move anymore")
-                elif dist < 20:
-                    x_left_border, x_right_border = compute_x_borders(
-                            cX, dist, frame_width, 10)
+                if to_consider == True:
+                        tag_corners_coord = markerCorner.reshape((4, 2))
+                        c = tag_corners_coord, markerID
+                        corners_to_consider.append(c)
 
 
-                    # Drawing border lines
-                    cv2.line(frame,
-                             (int(x_left_border), 0),
-                             (int(x_left_border), frame_height),
-                             (0, 255, 0), 2)
+            LOGGER.info(f"Number of relevants tags: {len(corners_to_consider)}")
+            if len(corners_to_consider) > 0:
+                    LOGGER.info("Looking for the tag closest to the middle of the camera")
+                    tags_centers = [get_center_from_tag_corners(corners_coord) for corners_coord, _ in corners_to_consider]
+                    distances_from_center = [get_distance_from_center(tag_center, (frame_width, frame_height)) for tag_center in tags_centers]
+                    index_to_focus = np.argmin(distances_from_center)
 
-                    cv2.line(frame,
-                             (int(x_right_border), 0),
-                             (int(x_right_border), frame_height),
-                             (0, 255, 0), 2)
+                    rvec, tvec, _ = estimatePoseSingleMarkers(corners_to_consider[index_to_focus][0], 0.01)
+                    dist = np.linalg.norm(tvec) * 100
+                    if dist < 10:
+                            LOGGER.info("Do not need to move anymore")
+                    elif dist < 20:
+                            cX, cY = tags_centers[index_to_focus]
+                            x_left_border, x_right_border = compute_x_borders(
+                                cX, dist, frame_width, 10)
+                            LOGGER.info(f"BORDER: {x_left_border, x_right_border}")
+                            if cX < x_left_border - 20:
+                                    LOGGER.info("GO LEFT")
+                            elif x_right_border + 20 < cX:
+                                LOGGER.info("GO RIGHT")
 
-                    LOGGER.info(f"BORDER: {x_left_border, x_right_border}")
-                    if cX < x_left_border - 20:
-                        LOGGER.info("GO LEFT")
-                        cv2.putText(
-                                frame,
-                                "GO LEFT",
-                                (topLeft[0], topLeft[1] + 30),
-                                cv2.FONT_HERSHEY_SIMPLEX,
-                                0.5,
-                                (0, 255, 0),
-                                2,
-                                )
-
-                    if x_right_border + 20 < cX:
-                        LOGGER.info("GO RIGHT")
-                        cv2.putText(
-                                frame,
-                                "GO RIGHT",
-                                (topLeft[0] - 20, topLeft[1] + 30),
-                                cv2.FONT_HERSHEY_SIMPLEX,
-                                0.5,
-                                (0, 255, 0),
-                                2,
-                                )
-
-                elif dist < 50:
-                    cv2.putText(
-                            frame,
-                            "GO STRAIGHT",
-                            (topLeft[0], topLeft[1] + 30),
-                            cv2.FONT_HERSHEY_SIMPLEX,
-                            0.5,
-                            (0, 255, 0),
-                            2,
-                            )
+                    else:
+                        LOGGER.info("GO STRAIGHT")
 
         if GUI_available == True:
                 cv2.imshow("frame", frame)

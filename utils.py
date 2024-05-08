@@ -41,8 +41,20 @@ def estimatePoseSingleMarkers(corners, marker_size, mtx=cMat,distortion=dcoeff):
         trash.append(nada)
     return rvecs, tvecs, trash
 
+
+def get_corners(tag_corners):
+    topLeft, topRight, bottomRight, bottomLeft = tag_corners
+    return tag_corners
+
+
 def get_center(topLeft_corner, bottomRight_corner):
     return int((topLeft_corner[0] + bottomRight_corner[0]) / 2.0), int((topLeft_corner[1] + bottomRight_corner[1]) / 2.0)
+
+
+# Keeping a "legacy function"
+def get_center_from_tag_corners(tag_corners):
+    topLeft, topRight, bottomRight, bottomLeft = tag_corners
+    return get_center(topLeft, bottomRight)
 
 
 def compute_x_borders(marker_x, dist, frame_width, max_dist):
@@ -64,4 +76,5 @@ def compute_left_border(marker_x, dist, frame_width, max_dist):
                                               max_dist)
 
 
-
+def get_distance_from_center(center, frame_dim):
+    frame_center = frame_dim[0] // 2, frame_dim[1] // 2
