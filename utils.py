@@ -77,4 +77,9 @@ def compute_left_border(marker_x, dist, frame_width, max_dist):
 
 
 def get_distance_from_center(center, frame_dim):
-    frame_center = frame_dim[0] // 2, frame_dim[1] // 2
+    frame_x_center, frame_y_center = frame_dim[0] // 2, frame_dim[1] // 2
+    tag_x_center, tag_y_center = center
+
+    x_diff_s = np.power(frame_x_center - tag_x_center, 2)
+    y_diff_s = np.power(frame_y_center - tag_y_center, 2)
+    return np.sqrt(x_diff_s + y_diff_s)
