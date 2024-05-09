@@ -66,14 +66,13 @@ def compute_x_borders(marker_x, dist, frame_width, max_dist):
 
 
 def compute_right_border(marker_x, dist, frame_width, max_dist):
-    return (max_dist / dist) * 0.9 * frame_width
+    return frame_width - compute_left_border(marker_x, dist, frame_width, max_dist)
 
 
 def compute_left_border(marker_x, dist, frame_width, max_dist):
-    return frame_width - compute_right_border(marker_x,
-                                              dist,
-                                              frame_width,
-                                              max_dist)
+    f1 = - (frame_width / (max_dist - 5))
+    f2 = (((dist - 5) / 3) - (dist-max_dist))
+    return f1 * f2
 
 
 def get_distance_from_center(center, frame_dim):
