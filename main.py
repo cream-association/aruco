@@ -7,9 +7,9 @@ from utils import (estimatePoseSingleMarkers, get_center_from_tag_corners,
 
 logging.basicConfig()
 LOGGER = logging.getLogger("aruco")
-LOGGER.setLevel(logging.DEBUG)
+LOGGER.setLevel(logging.ERROR)
 
-GUI_available = True
+GUI_available = False
 
 aruco_tags_to_detect = [36, 13]  # Tag number of delicate and tough flowers resp
 
@@ -67,12 +67,8 @@ if __name__ == "__main__":
             if len(corners_to_consider) > 0:
                     LOGGER.info("Looking for the tag closest to the middle of the camera")
                     tags_centers = [get_center_from_tag_corners(corners_coord) for corners_coord, _ in corners_to_consider]
-                    print("TAG CENTERS", tags_centers)
                     distances_from_center = [get_distance_from_center(tag_center, (frame_width, frame_height)) for tag_center in tags_centers]
-                    print("DIST CENTER", distances_from_center)
                     index_to_focus = np.argmin(distances_from_center)
-                    print("INDEX TO FOCUS:", index_to_focus)
-                    print("HEREEEEEE", corners_to_consider[index_to_focus][0])
 
                     rvec, tvec, _ = estimatePoseSingleMarkers([corners_to_consider[index_to_focus][0]], 0.01)
                     dist = np.linalg.norm(tvec) * 100
@@ -80,9 +76,14 @@ if __name__ == "__main__":
                             LOGGER.info("Do not need to move anymore")
                     elif dist < 20:
                             cX, cY = tags_centers[index_to_focus]
-                            x_left_border, x_right_border = compute_x_borders(
-                                cX, dist, frame_width, 10)
+                            borders = list(compute_x_borders(
+                                cX, dist, frame_width, 10))
+
+                            x_left_border, x_right_border = min(borders), max(borders)
                             LOGGER.info(f"BORDER: {x_left_border, x_right_border}")
+
+
+                            print("borders", x_left_border, x_right_border)
                             if cX < x_left_border - 20:
                                     LOGGER.info("GO LEFT")
                             elif x_right_border + 20 < cX:
@@ -92,12 +93,10 @@ if __name__ == "__main__":
                              (int(x_left_border), 0),
                              (int(x_left_border), frame_height),
                              (0, 255, 0), 2)
-
                             cv2.line(frame,
                              (int(x_right_border), 0),
                              (int(x_right_border), frame_height),
                              (0, 255, 0), 2)
-
                     else:
                         LOGGER.info("GO STRAIGHT")
 
